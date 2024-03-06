@@ -128,6 +128,16 @@ class AccReleased:
         
         return self.accounts_df
     
+    def filter_opportunities_by_stage(self):
+        # Valores de StageName que deseas mantener
+        desired_stages = ['Lead', 'Backlog with fundings', 'Backlog', 'In Credit', 'Opportunity Identified', 'Proposal Awarded', 'Proposal']
+        
+        # Filtrar el DataFrame de oportunidades por los valores deseados en StageName
+        filtered_opportunities = self.opportunities_df[self.opportunities_df['StageName'].isin(desired_stages)]
+        
+        # Actualizar el DataFrame de oportunidades con el resultado filtrado
+        self.opportunities_df = filtered_opportunities
+    
     def map_top_parent_to_opportunities(self):
         # Crear un diccionario con clave: Id_x y valor: Top Parent del DataFrame de cuentas
         accounts_dict = dict(zip(self.accounts_df['Id_x'], self.accounts_df['Top Parent']))
@@ -155,6 +165,19 @@ class AccReleased:
 
         # Comparar la clave del diccionario con la columna Top Parent de accounts y añadir la columna Created Date Opp
         self.accounts_df['Created Date Opp'] = self.accounts_df['Top Parent'].map(opps_dict)
+
+    def map_stage_to_accounts(self):
+        # Paso 1: Filtrar opportunities_df por Last Created Date igual a 1
+        latest_opportunities = self.opportunities_df[self.opportunities_df['Last Created Date'] == 1]
+        
+        # Paso 2: Crear un diccionario con clave: Top Parent Acc y valor: StageName
+        top_parent_stage_dict = dict(zip(latest_opportunities['Top Parent Acc'], latest_opportunities['StageName']))
+
+        # Paso 3: Mapear el valor de StageName del diccionario al DataFrame accounts_df
+        self.accounts_df['Stage Opp'] = self.accounts_df['Top Parent'].map(top_parent_stage_dict)
+
+        # Paso 4: Rellenar los valores NaN con una cadena vacía en la columna Stage Opp
+        self.accounts_df['Stage Opp'].fillna('', inplace=True)
 
     def calculate_days_difference_opps(self):
         # Obtener la fecha y hora actuales en formato UTC
