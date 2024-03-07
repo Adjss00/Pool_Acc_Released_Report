@@ -11,7 +11,7 @@ if __name__ == "__main__":
     extractor = ObjectExtractor(username, password, security_token)
 
     objects_to_extract = [
-        ('Account', 'accounts_df', ['Id', 'Name', 'ParentId', 'ACC_tx_Account_Status__c', 'CreatedDate', 'OwnerId', 'ACC_tx_EXT_REF_ID__c']),
+        ('Account', 'accounts_df', ['Id', 'Name','Region__c', 'Account_Type__c', 'Vertical_Focus__c', 'ParentId', 'ACC_tx_Account_Status__c', 'CreatedDate', 'OwnerId', 'ACC_tx_EXT_REF_ID__c']),
         ('User', 'users_df', ['Id', 'Name']),
         ('Event', 'events_df', ['Id', 'ActivityDate', 'AccountId', 'OwnerId', 'OwnerName__c']),
         ('Opportunity', 'opportunities_df', ['Id', 'AccountId', 'Name', 'StageName', 'CreatedDate', 'OwnerId', 'OPP_ls_Region__c', 'OPP_tx_EXT_REF_ID__c']),
@@ -38,11 +38,15 @@ if __name__ == "__main__":
     data_processor.mark_latest_activity()
     data_processor.filter_latest_opportunities()
     data_processor.map_stage_to_accounts()
-    data_processor.calculate_days_difference_opps()
+    #data_processor.calculate_days_difference_opps()
     data_processor.fill_missing_days_diff_citas()
     data_processor.add_cita_six_month_column()
-    data_processor.add_opps_six_month_column()
-    data_processor.add_released_column()
+    #data_processor.add_opps_six_month_column()
+    #data_processor.add_released_column()
+    data_processor.filter_vertical_focus()
+    data_processor.filter_account_type()
+    data_processor.filter_account_status()
+    data_processor.filter_region()
     data_processor.filter_owner_names()
 
     file_path = "out/Pool_Account_Released.xlsx"

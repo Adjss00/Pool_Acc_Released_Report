@@ -129,11 +129,11 @@ class AccReleased:
         return self.accounts_df
     
     def filter_opportunities_by_stage(self):
-        # Valores de StageName que deseas mantener
-        desired_stages = ['Lead', 'Backlog with fundings', 'Backlog', 'In Credit', 'Opportunity Identified', 'Proposal Awarded', 'Proposal']
+        # Valores de StageName que deseas eliminar
+        undesired_stages = ['Lead', 'Backlog with fundings', 'Backlog', 'In Credit', 'Opportunity Identified', 'Proposal Awarded', 'Proposal', 'Funded']
         
-        # Filtrar el DataFrame de oportunidades por los valores deseados en StageName
-        filtered_opportunities = self.opportunities_df[self.opportunities_df['StageName'].isin(desired_stages)]
+        # Filtrar el DataFrame de oportunidades por los valores no deseados en StageName
+        filtered_opportunities = self.opportunities_df[~self.opportunities_df['StageName'].isin(undesired_stages)]
         
         # Actualizar el DataFrame de oportunidades con el resultado filtrado
         self.opportunities_df = filtered_opportunities
@@ -200,9 +200,10 @@ class AccReleased:
         except Exception as e:
             print("Error:", e)
 
+    #* Inverti el Si y No para las nuevas reglas.
     def add_cita_six_month_column(self):
         # Añadir una nueva columna 'Cita_Six_Month' basada en la condición de 'Days Diff Citas'
-        self.accounts_df['Citas < 6?'] = self.accounts_df['Days Diff Citas'].apply(lambda x: 'No' if x > 182.5 else 'Sí')
+        self.accounts_df['Reasignar?'] = self.accounts_df['Days Diff Citas'].apply(lambda x: 'Si' if x > 182.5 else 'No')
 
     def add_opps_six_month_column(self):
         # Convertir la columna 'Days Diff Opps' a números si es posible
@@ -241,6 +242,35 @@ class AccReleased:
         self.accounts_df.loc[(self.accounts_df['Citas < 6?'] == 'Sí') & (self.accounts_df['Opps < 6?'] == 'No'), 'Released?'] = 'No'
         self.accounts_df.loc[(self.accounts_df['Citas < 6?'] == 'Sí') & (self.accounts_df['Opps < 6?'] == ''), 'Released?'] = 'No'
         self.accounts_df.loc[(self.accounts_df['Citas < 6?'] == 'No') & (self.accounts_df['Opps < 6?'] == ''), 'Released?'] = 'Sí'
+
+    def filter_account_status(self):
+        # Valores de ACC_tx_Account_Status__c que deseas eliminar
+        undesired_statuses = ['Dormant', 'Active', 'New Customer to EC']
+
+        # Filtrar el DataFrame de cuentas por los valores no deseados en ACC_tx_Account_Status__c
+        self.accounts_df = self.accounts_df[~self.accounts_df['ACC_tx_Account_Status__c'].isin(undesired_statuses)]
+
+    def filter_vertical_focus(self):
+        # Valores de Vertical_Focus__c que deseas eliminar
+        undesired_verticals = ['Vendor Equipment', 'Vendor Technology Finance']
+        
+        # Filtrar el DataFrame de cuentas por los valores no deseados en Vertical_Focus__c
+        self.accounts_df = self.accounts_df[~self.accounts_df['Vertical_Focus__c'].isin(undesired_verticals)]
+
+    def filter_account_type(self):
+        # Valores de Account_Type__c que deseas eliminar
+        undesired_types = ['Must Have']
+        
+        # Filtrar el DataFrame de cuentas por los valores no deseados en Account_Type__c
+        self.accounts_df = self.accounts_df[~self.accounts_df['Account_Type__c'].isin(undesired_types)]
+
+    def filter_region(self):
+        # Valor de Region__c que deseas eliminar
+        undesired_region = 'Telemarketing'
+        
+        # Filtrar el DataFrame de cuentas por los valores no deseados en Region__c
+        self.accounts_df = self.accounts_df[self.accounts_df['Region__c'] != undesired_region]
+
         
     def export_to_excel(self, file_path):
         # Crear un ExcelWriter para escribir en el archivo de Excel
