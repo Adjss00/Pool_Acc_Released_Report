@@ -40,6 +40,16 @@ class AccReleased:
         # Filtrar el DataFrame accounts_df
         self.accounts_df = self.accounts_df[~self.accounts_df['Owner Name'].isin(owners_to_remove)]
 
+    def filter_owner_active(self):
+        mapping = self.users_df.set_index('Id')['IsActive'].to_dict()
+        
+        self.accounts_df['Originador Activo?'] = self.accounts_df['OwnerId'].map(mapping)
+
+    def filter_owner_region(self):
+        mapping = self.users_df.set_index('Id')['USU_ls_Region__c'].to_dict()
+        
+        self.accounts_df['Region Owner'] = self.accounts_df['OwnerId'].map(mapping)
+
     def insert_top_parent_column(self):
         # Hacer una copia del DataFrame accounts_df
         self.accounts_df = self.accounts_df.copy()
@@ -271,7 +281,74 @@ class AccReleased:
         # Filtrar el DataFrame de cuentas por los valores no deseados en Region__c
         self.accounts_df = self.accounts_df[self.accounts_df['Region__c'] != undesired_region]
 
+    def export_released_pools_active(self, file_path_group):
+        # Primero, filtra la información y quédate con los campos que dicen 'Si' en la columna 'Reasignar?'
+        filtered_accounts_df = self.accounts_df[self.accounts_df['Reasignar?'] == 'Si']
         
+        # Luego, filtra aún más para aquellos donde 'Originador Activo?' es True y la columna 'Region Owner' cumple con ciertos valores
+        filtered_active_accounts_df = filtered_accounts_df[(filtered_accounts_df['Originador Activo?'] == True) & 
+                                                        (filtered_accounts_df['Region Owner'].isin(['LMM 1', 'LMM 2', 'LMM 3', 'LMM 4', 'LMM 5', 
+                                                                                                    'Guadalajara 1', 'Mexico 1', 'Mexico 2', 'Mexico 3', 
+                                                                                                    'SWATT LMM 1', 'SWATT LMM 2', 'Monterrey 1', 'Vendor']))]
+        
+        # Ahora, agrupa los valores por 'Owner Name'
+        grouped_accounts = filtered_active_accounts_df.groupby('Owner Name')
+        
+        # Ahora, exporta cada grupo a archivos de Excel con el nombre especificado
+        for owner, group in grouped_accounts:
+            # Crea un nombre de archivo basado en el nombre del propietario
+            file_name = f"Released_Pool_{owner}.xlsx"
+            file_path_with_name = f"{file_path_group}/{file_name}"
+            
+            # Crea un ExcelWriter para escribir en el archivo de Excel
+            writer = pd.ExcelWriter(file_path_with_name, engine='xlsxwriter')
+            
+            # Exporta el grupo a una hoja llamada 'Released Pool'
+            group.to_excel(writer, sheet_name='Released Pool', index=False)
+            
+            # Guarda y cierra el archivo de Excel
+            writer.close()
+    
+    def export_released_pools_inactive(self, file_path_inactive):
+        # Primero, filtra la información y quédate con los campos que dicen 'Si' en la columna 'Reasignar?'
+        filtered_accounts_df = self.accounts_df[self.accounts_df['Reasignar?'] == 'Si']
+        
+        # Luego, agrupa los valores por 'Owner Name'
+        grouped_accounts = filtered_accounts_df.groupby('Owner Name')
+        
+        # Ahora, exporta cada grupo a archivos de Excel con el nombre especificado
+        for owner, group in grouped_accounts:
+            # Verificar si todos los valores en la columna 'Originador Activo?' son 'No' para este grupo
+            if all(group['Originador Activo?'] == False):
+                # Crea un nombre de archivo basado en el nombre del propietario
+                file_name = f"Released_Pool_{owner}.xlsx"
+                file_path_with_name = f"{file_path_inactive}/{file_name}"
+                
+                # Crea un ExcelWriter para escribir en el archivo de Excel
+                writer = pd.ExcelWriter(file_path_with_name, engine='xlsxwriter')
+                
+                # Exporta el grupo a una hoja llamada 'Released Pool'
+                group.to_excel(writer, sheet_name='Released Pool', index=False)
+                
+                # Guarda y cierra el archivo de Excel
+                writer.close()
+            elif all((group['Originador Activo?'] == True) & 
+                    ~(group['Region Owner'].isin(['LMM 1', 'LMM 2', 'LMM 3', 'LMM 4', 'LMM 5', 
+                                                'Guadalajara 1', 'Mexico 1', 'Mexico 2', 'Mexico 3', 
+                                                'SWATT LMM 1', 'SWATT LMM 2', 'Monterrey 1', 'Vendor']))):
+                # Crea un nombre de archivo basado en el nombre del propietario
+                file_name = f"Released_Pool_{owner}.xlsx"
+                file_path_with_name = f"{file_path_inactive}/{file_name}"
+                
+                # Crea un ExcelWriter para escribir en el archivo de Excel
+                writer = pd.ExcelWriter(file_path_with_name, engine='xlsxwriter')
+                
+                # Exporta el grupo a una hoja llamada 'Released Pool'
+                group.to_excel(writer, sheet_name='Released Pool', index=False)
+                
+                # Guarda y cierra el archivo de Excel
+                writer.close()
+
     def export_to_excel(self, file_path):
         # Crear un ExcelWriter para escribir en el archivo de Excel
         writer = pd.ExcelWriter(file_path, engine='xlsxwriter')
